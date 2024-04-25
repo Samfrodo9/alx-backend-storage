@@ -1,0 +1,2 @@
+// i wrote a script thatdisplay the number of documents in the collection
+db.school.count()
