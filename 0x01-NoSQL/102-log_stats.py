@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
-"""Print info in a collection"""
+""" Log stats - new version """
 from pymongo import MongoClient
 
-if __name__ == "__main__":
-    """ Make a check for all elements in a collention """
-    client = MongoClient('mongodb://127.0.0.1:27017')
+
+def nginx_stats_check():
+    """ provides some stats about Nginx logs stored in MongoDB:"""
+    client = MongoClient()
     collection = client.logs.nginx
 
-    print(f"{collection.estimated_document_count()} logs")
-
+    num_of_docs = collection.count_documents({})
+    print("{} logs".format(num_of_docs))
     print("Methods:")
-    for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
-        method_count = collection.count_documents({'method': method})
-        print(f"\tmethod {method}: {method_count}")
-
-    check_get = collection.count_documents({
-        'method': 'GET', 'path': "/status"
-    })
-    print(f"{check_get} status check")
+    methods_list = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+    for method in methods_list:
+        method_count = collection.count_documents({"method": method})
+        print("\tmethod {}: {}".format(method, method_count))
+    status = collection.count_documents({"method": "GET", "path": "/status"})
+    print("{} status check".format(status))
 
     print("IPs:")
-    top_ips = collection.aggregate([
+
+    top_IPs = collection.aggregate([
         {"$group":
-            {
-                "_id": "$ip",
-                "count": {"$sum": 1}
-            }
-        },
+         {
+             "_id": "$ip",
+             "count": {"$sum": 1}
+         }
+         },
         {"$sort": {"count": -1}},
         {"$limit": 10},
         {"$project": {
@@ -35,5 +35,11 @@ if __name__ == "__main__":
             "count": 1
         }}
     ])
-    for ip in top_ips:
-        print(f"\t{ip.get('ip')}: {ip.get('count')}")
+    for top_ip in top_IPs:
+        count = top_ip.get("count")
+        ip_address = top_ip.get("ip")
+        print("\t{}: {}".format(ip_address, count))
+
+
+if __name__ == "__main__":
+    nginx_stats_check()
